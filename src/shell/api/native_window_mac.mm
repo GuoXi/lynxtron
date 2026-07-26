@@ -882,7 +882,11 @@ gfx::Size NativeWindowMac::GetSize() const {
 }
 
 float NativeWindowMac::GetDevicePixelRatio() const {
-  return [[NSScreen mainScreen] backingScaleFactor];
+  NSScreen* screen = [window_ screen];
+  if (!screen) {
+    screen = [NSScreen mainScreen];
+  }
+  return screen ? static_cast<float>(screen.backingScaleFactor) : 1.0f;
 }
 
 gfx::Rect NativeWindowMac::GetNormalBounds() const {

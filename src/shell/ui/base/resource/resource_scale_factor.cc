@@ -9,15 +9,31 @@
 #include "ui/base/resource/resource_scale_factor.h"
 
 #include <array>
-#include <iterator>
+#include <vector>
 
 namespace ui {
 
 namespace {
 
-const float kResourceScaleFactorScales[] = {1.0f, 1.0f, 2.0f, 3.0f};
-static_assert(NUM_SCALE_FACTORS == std::size(kResourceScaleFactorScales),
+constexpr std::array<float, NUM_SCALE_FACTORS> kResourceScaleFactorScales = {
+    1.0f,
+    1.0f,
+    2.0f,
+    3.0f,
+};
+static_assert(NUM_SCALE_FACTORS == kResourceScaleFactorScales.size(),
               "kScaleFactorScales has incorrect size");
+
+// Resource scale factors are resource-pack/image-density buckets. With HiDPI
+// enabled by default on desktop, Lynxtron supports 1x and 2x resources and
+// rescales them for intermediate device scale factors.
+const std::vector<ResourceScaleFactor>& SupportedResourceScaleFactorsStorage() {
+  static const std::vector<ResourceScaleFactor> supported_scale_factors = {
+      k100Percent, k200Percent};
+  return supported_scale_factors;
+}
+
+const float kFallbackToSmallerScaleDiff = 0.20f;
 
 }  // namespace
 
@@ -25,21 +41,15 @@ float GetScaleForResourceScaleFactor(ResourceScaleFactor scale_factor) {
   return kResourceScaleFactorScales[scale_factor];
 }
 
-std::vector<ui::ResourceScaleFactor> GetSupportedResourceScaleFactors() {
-  return {ui::k100Percent, ui::k200Percent};
+const std::vector<ui::ResourceScaleFactor>& GetSupportedResourceScaleFactors() {
+  return SupportedResourceScaleFactorsStorage();
 }
 
 ui::ResourceScaleFactor GetSupportedResourceScaleFactorForRescale(float scale) {
-  ui::ResourceScaleFactor closest_match = ui::k100Percent;
-
-  constexpr std::array<ui::ResourceScaleFactor, 2> scale_factors{
-      ui::k100Percent, ui::k200Percent};
-
-  const float kFallbackToSmallerScaleDiff = 0.20f;
   // Returns an exact match, a smaller scale within
   // `kFallbackToSmallerScaleDiff` units, the nearest larger scale, or the max
   // supported scale.
-  for (auto supported_scale : scale_factors) {
+  for (auto supported_scale : GetSupportedResourceScaleFactors()) {
     if (GetScaleForResourceScaleFactor(supported_scale) +
             kFallbackToSmallerScaleDiff >=
         scale) {
@@ -47,7 +57,7 @@ ui::ResourceScaleFactor GetSupportedResourceScaleFactorForRescale(float scale) {
     }
   }
 
-  return ui::k200Percent;
+  return GetSupportedResourceScaleFactors().back();
 }
 
 }  // namespace ui

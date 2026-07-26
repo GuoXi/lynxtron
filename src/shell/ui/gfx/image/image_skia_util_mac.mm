@@ -28,10 +28,6 @@ bool IsNSImageEmpty(NSImage* image) {
   return image.representations.count == 0;
 }
 
-std::vector<ui::ResourceScaleFactor> GetSupportedResourceScaleFactors() {
-  return {ui::k100Percent, ui::k200Percent};
-}
-
 }  // namespace
 
 namespace gfx {

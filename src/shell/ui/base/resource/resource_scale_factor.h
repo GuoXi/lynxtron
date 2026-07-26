@@ -30,7 +30,9 @@ enum ResourceScaleFactor : int {
 // Returns the image scale for the scale factor passed in.
 float GetScaleForResourceScaleFactor(ResourceScaleFactor scale_factor);
 
-std::vector<ui::ResourceScaleFactor> GetSupportedResourceScaleFactors();
+// Returns the resource scale factors supported by this build in ascending
+// order.
+const std::vector<ui::ResourceScaleFactor>& GetSupportedResourceScaleFactors();
 
 ui::ResourceScaleFactor GetSupportedResourceScaleFactorForRescale(float scale);
 }  // namespace ui

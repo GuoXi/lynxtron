@@ -9,6 +9,7 @@
 #ifndef LYNXTRON_SHELL_APP_APPLICATION_OBSERVER_H_
 #define LYNXTRON_SHELL_APP_APPLICATION_OBSERVER_H_
 
+#include <optional>
 #include <string>
 
 #include "base/memory/scoped_refptr.h"
@@ -21,6 +22,24 @@ class DictionaryValue;
 }
 
 namespace lynxtron {
+
+#if BUILDFLAG(IS_MAC)
+enum class UserActivityUpdateErrorReason {
+  // userActivityWillSave: ran on the main thread. Waiting would deadlock JS, so
+  // updateCurrentActivity() had to be called synchronously by the event
+  // listener.
+  kSynchronousUpdateRequired,
+
+  // userActivityWillSave: ran on a background thread, but no matching update
+  // arrived before the compatibility window expired.
+  kUpdateTimeout,
+};
+
+struct UserActivityUpdateErrorDetails {
+  UserActivityUpdateErrorReason reason;
+  std::optional<int> timeout_ms;
+};
+#endif
 
 class ApplicationObserver : public base::CheckedObserver {
  public:
@@ -75,6 +94,13 @@ class ApplicationObserver : public base::CheckedObserver {
   virtual void OnUpdateUserActivityState(bool* prevent_default,
                                          const std::string& type,
                                          base::Value::Dict user_info) {}
+  // Reports that preventDefault() requested a replacement payload, but no
+  // matching updateCurrentActivity() arrived in time. This is diagnostic: the
+  // native save request has already ended and cannot be recovered by handling
+  // this notification.
+  virtual void OnUpdateUserActivityStateError(
+      const std::string& type,
+      const UserActivityUpdateErrorDetails& details) {}
   // User clicked the native macOS new tab button. (macOS only)
   virtual void OnNewWindowForTab() {}
 

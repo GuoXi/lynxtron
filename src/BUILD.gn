@@ -620,6 +620,8 @@ source_set("lynxtron_lib") {
       "shell/api/ui/mac/lynx_ns_window_delegate.h",
       "shell/api/ui/mac/lynx_ns_window_delegate.mm",
       "shell/api/ui/message_box_mac.mm",
+      "shell/api/user_activity_update_error.cc",
+      "shell/api/user_activity_update_error.h",
       "shell/app/application_mac.mm",
       "shell/app/icon_manager_mac.mm",
       "shell/app/mac/dict_util.h",
@@ -628,6 +630,8 @@ source_set("lynxtron_lib") {
       "shell/app/mac/lynxtron_application.mm",
       "shell/app/mac/lynxtron_application_delegate.h",
       "shell/app/mac/lynxtron_application_delegate.mm",
+      "shell/app/mac/user_activity_update_coordinator.h",
+      "shell/app/mac/user_activity_update_coordinator.mm",
       "shell/app/main_parts_mac.mm",
       "shell/app/relauncher_mac.cc",
       "shell/app/uv_stdio_fix.cc",
@@ -1214,6 +1218,13 @@ test("lynxtron_unittests") {
     "shell/test/shell_test.h",
     "shell/test/shell_v8_test.h",
   ]
+  if (is_mac) {
+    sources += [
+      "shell/api/user_activity_update_error_unittest.cc",
+      "shell/app/application_mac_unittest.cc",
+      "shell/app/mac/user_activity_update_coordinator_unittest.cc",
+    ]
+  }
 }
 
 group("lynxtron_extension_group") {

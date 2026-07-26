@@ -87,6 +87,9 @@ class App : public gin_helper::DeprecatedWrappable<App>,
   void OnUpdateUserActivityState(bool* prevent_default,
                                  const std::string& type,
                                  base::Value::Dict user_info) override;
+  void OnUpdateUserActivityStateError(
+      const std::string& type,
+      const UserActivityUpdateErrorDetails& details) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
   void OnDidResignActive() override;
@@ -173,8 +176,6 @@ class App : public gin_helper::DeprecatedWrappable<App>,
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;
   base::FilePath app_path_;
-  // TODO(Guo Xi):process metric
-  // std::unique_ptr<electron::ProcessMetric> app_metric_;
 
   base::WeakPtrFactory<App> weak_factory_{this};
 };

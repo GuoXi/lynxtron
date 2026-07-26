@@ -57,6 +57,7 @@
 #if BUILDFLAG(IS_MAC)
 #include "base/system/sys_info.h"
 #include "shell/api/api_menu.h"
+#include "shell/api/user_activity_update_error.h"
 #include "shell/ui/cocoa/electron_bundle_mover.h"
 #endif
 
@@ -517,7 +518,6 @@ void App::OnQuit() {
   }
 }
 
-// TODO(Guo Xi): Verify open-file event in packaged application
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   if (Emit("open-file", file_path)) {
     *prevent_default = true;
@@ -583,6 +583,13 @@ void App::OnUpdateUserActivityState(bool* prevent_default,
   if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
+}
+
+void App::OnUpdateUserActivityStateError(
+    const std::string& type,
+    const UserActivityUpdateErrorDetails& details) {
+  Emit("update-activity-state-error", type,
+       base::Value(CreateUserActivityUpdateErrorValue(details)));
 }
 
 void App::OnNewWindowForTab() {
@@ -1206,6 +1213,15 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getCurrentActivityType",
                  base::BindRepeating(&Application::GetCurrentActivityType,
                                      application))
+      .SetMethod("invalidateCurrentActivity",
+                 base::BindRepeating(&Application::InvalidateCurrentActivity,
+                                     application))
+      .SetMethod(
+          "resignCurrentActivity",
+          base::BindRepeating(&Application::ResignCurrentActivity, application))
+      .SetMethod(
+          "updateCurrentActivity",
+          base::BindRepeating(&Application::UpdateCurrentActivity, application))
       .SetProperty("dock", &App::GetDockAPI)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)

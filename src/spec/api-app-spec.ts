@@ -493,11 +493,30 @@ describe('app module', () => {
   ifdescribe(process.platform === 'darwin')(
     'app.setUserActivity(type, userInfo)',
     () => {
+      afterEach(() => {
+        app.invalidateCurrentActivity();
+      });
+
       it('sets the current activity', () => {
         app.setUserActivity('com.electron.testActivity', { testData: '123' });
         expect(app.getCurrentActivityType()).to.equal(
           'com.electron.testActivity'
         );
+      });
+
+      it('exposes the current activity lifecycle methods', () => {
+        expect(app.invalidateCurrentActivity).to.be.a('function');
+        expect(app.resignCurrentActivity).to.be.a('function');
+        expect(app.updateCurrentActivity).to.be.a('function');
+      });
+
+      it('accepts the update activity state error event', () => {
+        const listener = () => {};
+
+        expect(() =>
+          app.on('update-activity-state-error', listener)
+        ).not.to.throw();
+        app.removeListener('update-activity-state-error', listener);
       });
     }
   );

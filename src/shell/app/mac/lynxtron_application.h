@@ -14,6 +14,7 @@
 
 #include "base/functional/callback.h"
 #include "base/mac/scoped_sending_event.h"
+#include "shell/app/mac/user_activity_update_coordinator.h"
 
 @interface LynxtronApplication : NSApplication <CrAppProtocol,
                                                 CrAppControlProtocol,
@@ -21,8 +22,7 @@
  @private
   BOOL handlingSendEvent_;
   NSUserActivity* __strong currentActivity_;
-  NSCondition* handoffLock_;
-  BOOL updateReceived_;
+  lynxtron::UserActivityUpdateCoordinator userActivityUpdates_;
   BOOL userStoppedShutdown_;
   base::RepeatingCallback<bool()> shouldShutdown_;
 }

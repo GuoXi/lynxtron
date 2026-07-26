@@ -221,6 +221,13 @@ class Application : private WindowListObserver {
   bool UpdateUserActivityState(const std::string& type,
                                base::Value::Dict user_info);
 
+  // Reports that a prevented user-activity save did not receive its required
+  // update. The event is intentionally separate from continue-activity-error:
+  // saving local state and continuing a remote activity are different
+  // operations.
+  void UserActivityUpdateFailed(const std::string& type,
+                                const UserActivityUpdateErrorDetails& details);
+
   // void ApplyForcedRTL();
 
   // Bounce the dock icon.

@@ -1537,7 +1537,6 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
          ![window_ standardWindowButton:NSWindowCloseButton].hidden;
 }
 
-// TODO(Guo Xi) : support traffic light position.
 void NativeWindowMac::SetTrafficLightPosition(
     std::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);

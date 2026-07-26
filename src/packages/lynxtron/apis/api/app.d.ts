@@ -28,6 +28,21 @@ export interface ContinueActivityDetails {
   webpageURL?: string;
 }
 
+export interface UpdateActivityStateErrorDetails {
+  /**
+   * `synchronous-update-required` means AppKit invoked the save callback on the
+   * main thread and the listener returned without a matching synchronous update.
+   * `update-timeout` means a background callback did not receive a matching update
+   * within the compatibility window.
+   */
+  reason: 'synchronous-update-required' | 'update-timeout';
+  /**
+   * The compatibility window in milliseconds. Present only when `reason` is
+   * `update-timeout`.
+   */
+  timeoutMs?: number;
+}
+
 /**
  * The object returned by `getApplicationInfoForProtocol`.
  */
@@ -1052,9 +1067,14 @@ export interface App extends EventEmitter {
   /**
    * Emitted when Handoff is about to be resumed on another device. If you need to
    * update the state to be transferred, you should call `event.preventDefault()`
-   * immediately, construct a new `userInfo` dictionary and call
-   * `app.updateCurrentActivity()` in a timely manner. Otherwise, the operation will
-   * fail and `continue-activity-error` will be called.
+   * and `app.updateCurrentActivity()` synchronously before the listener returns.
+   *
+   * When macOS invokes the native callback on a background thread, Lynxtron keeps
+   * that callback open for up to one second for compatibility with asynchronous
+   * updates. Do not rely on that window: macOS may instead invoke the callback on
+   * the main thread, where waiting would block JavaScript. If no matching update is
+   * received, `update-activity-state-error` is emitted after this save request has
+   * ended.
    *
    * @platform darwin
    */
@@ -1138,6 +1158,81 @@ export interface App extends EventEmitter {
        * Contains app-specific state stored by the activity.
        */
       userInfo: unknown
+    ) => void
+  ): this;
+
+  /**
+   * Emitted when an `update-activity-state` listener called
+   * `event.preventDefault()`, but did not provide a matching update in time. This
+   * event is diagnostic; the corresponding native save request has already ended.
+   *
+   * @platform darwin
+   */
+  on(
+    event: 'update-activity-state-error',
+    listener: (
+      event: Event,
+      /**
+       * A string identifying the activity.
+       */
+      type: string,
+      details: UpdateActivityStateErrorDetails
+    ) => void
+  ): this;
+  /**
+   * @platform darwin
+   */
+  off(
+    event: 'update-activity-state-error',
+    listener: (
+      event: Event,
+      /**
+       * A string identifying the activity.
+       */
+      type: string,
+      details: UpdateActivityStateErrorDetails
+    ) => void
+  ): this;
+  /**
+   * @platform darwin
+   */
+  once(
+    event: 'update-activity-state-error',
+    listener: (
+      event: Event,
+      /**
+       * A string identifying the activity.
+       */
+      type: string,
+      details: UpdateActivityStateErrorDetails
+    ) => void
+  ): this;
+  /**
+   * @platform darwin
+   */
+  addListener(
+    event: 'update-activity-state-error',
+    listener: (
+      event: Event,
+      /**
+       * A string identifying the activity.
+       */
+      type: string,
+      details: UpdateActivityStateErrorDetails
+    ) => void
+  ): this;
+  /**
+   * @platform darwin
+   */
+  removeListener(
+    event: 'update-activity-state-error',
+    listener: (
+      event: Event,
+      /**
+       * A string identifying the activity.
+       */
+      type: string,
+      details: UpdateActivityStateErrorDetails
     ) => void
   ): this;
 
@@ -1330,6 +1425,12 @@ export interface App extends EventEmitter {
    * @platform darwin
    */
   getCurrentActivityType(): string;
+  /**
+   * Invalidates the current Handoff user activity.
+   *
+   * @platform darwin
+   */
+  invalidateCurrentActivity(): void;
   /**
    * * `minItems` Integer - The minimum number of items that will be shown in the
    * Jump List (for a more detailed description of this value see the MSDN docs).
@@ -1579,6 +1680,12 @@ export interface App extends EventEmitter {
    */
   requestSingleInstanceLock(additionalData?: Record<any, any>): boolean;
   /**
+   * Marks the current Handoff user activity as inactive without invalidating it.
+   *
+   * @platform darwin
+   */
+  resignCurrentActivity(): void;
+  /**
    * Set the about panel options. This will override the values defined in the app's
    * `.plist` file on macOS. See the Apple docs for more details. On Linux, values
    * must be set in order to be shown; there are no defaults.
@@ -1773,6 +1880,13 @@ export interface App extends EventEmitter {
    * @platform mas
    */
   startAccessingSecurityScopedResource(bookmarkData: string): Function;
+  /**
+   * Updates the current activity if its type matches `type`, merging the entries
+   * from `userInfo` into its current `userInfo` dictionary.
+   *
+   * @platform darwin
+   */
+  updateCurrentActivity(type: string, userInfo: any): void;
   /**
    * fulfilled when Lynxtron is initialized. May be used as a convenient alternative
    * to checking `app.isReady()` and subscribing to the `ready` event if the app is

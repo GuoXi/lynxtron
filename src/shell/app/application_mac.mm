@@ -400,6 +400,14 @@ bool Application::UpdateUserActivityState(const std::string& type,
   return prevent_default;
 }
 
+void Application::UserActivityUpdateFailed(
+    const std::string& type,
+    const UserActivityUpdateErrorDetails& details) {
+  for (ApplicationObserver& observer : observers_) {
+    observer.OnUpdateUserActivityStateError(type, details);
+  }
+}
+
 v8::Local<v8::Value> Application::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;

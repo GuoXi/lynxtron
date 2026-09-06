@@ -637,13 +637,11 @@ jobs:
           PLATFORM="darwin"
           ARCH="${{ matrix.arch }}"
           PACKAGE_DIR=${{ github.workspace }}/lynxtron/src/packages/cef-webview
+          # Install deps via yarn at the workspace root so that workspace:*
+          # protocol is resolved correctly (npm does not support it).
+          cd ${{ github.workspace }}/lynxtron/src
+          node tools/yarn.js install --immutable --mode=skip-build
           cd "$PACKAGE_DIR"
-          # Install only the build deps. The package's @lynx-js/lynxtron
-          # devDependency is not required for macOS native builds and is
-          # skipped to avoid resolving an unreleased version on the registry.
-          npm install --no-save --ignore-scripts \
-            cmake-js@^7.4.0 \
-            node-addon-api@^7.0.0
           if [ "$ARCH" = "arm64" ]; then
             export CMAKE_OSX_ARCHITECTURES=arm64
             npx cmake-js build

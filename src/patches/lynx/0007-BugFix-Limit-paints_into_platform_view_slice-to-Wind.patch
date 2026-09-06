@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: zsy-jason <186247581+zsy-jason@users.noreply.github.com>
+Date: Sat, 6 Sep 2026 00:00:00 +0000
+Subject: [PATCH] [BugFix] Limit paints_into_platform_view_slice to Windows
+ Skity
+
+---
+diff --git a/clay/flow/layers/external_view_layer.cc b/clay/flow/layers/external_view_layer.cc
+index 0da525e0b..d5eea8119 100644
+--- a/clay/flow/layers/external_view_layer.cc
++++ b/clay/flow/layers/external_view_layer.cc
+@@ -23,7 +23,9 @@ void ExternalViewLayer::Preroll(PrerollContext* context) {
+   }
+   ContainerLayer::Preroll(context);
+   context->has_platform_view = true;
++#if defined(OS_WIN) && defined(ENABLE_SKITY)
+   context->paints_into_platform_view_slice = true;
++#endif
+   set_subtree_has_platform_view(true);
+   MutatorsStack mutators;
+   context->state_stack.fill(&mutators);

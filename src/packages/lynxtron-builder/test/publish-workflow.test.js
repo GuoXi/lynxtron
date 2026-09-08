@@ -268,21 +268,24 @@ test('macOS releases publish both universal slice architectures', () => {
   );
 });
 
-test('macOS publish jobs preserve sibling architectures and cache CEF dependencies', () => {
+test('macOS CEF publishes use the same target-aware build entry as local builds', () => {
   assert.equal(jobs['build-macos'].strategy['fail-fast'], false);
   assert.equal(jobs['build-cef-webview-macos'].strategy['fail-fast'], false);
 
   const cefJob = jobs['build-cef-webview-macos'];
-  const cacheStep = cefJob.steps.find(
-    (step) => step.uses === './lynxtron/.github/actions/common-deps'
+  const build = cefJob.steps.find((step) => step.name === 'Build CEF webview');
+  for (const field of ['name', 'email']) {
+    const config = build.run.indexOf(`git config --global user.${field}`);
+    assert.ok(config >= 0 && config < build.run.indexOf('python3 lynxtron_tools/'));
+  }
+  assert.match(
+    build.run,
+    /python3 lynxtron_tools\/build_cef_webview.py --arch/
   );
-  assert.ok(cacheStep, 'CEF builds must restore and save the Habitat cache');
-  assert.equal(cacheStep.with['run-habitat-sync'], 'false');
-
-  const prepareStep = cefJob.steps.find((step) => step.name === 'Prepare environment');
-  assert.equal(prepareStep.env.HABITAT_CONCURRENCY, 2);
-  assert.match(prepareStep.run, /for attempt in 1 2 3/);
-  assert.match(prepareStep.run, /10 \* \(2 \*\* \(attempt - 1\)\)/);
+  assert.ok(build.run.includes('${{ matrix.arch }}'));
+  assert.ok(build.run.includes('${{ needs.get-version.outputs.version }}'));
+  assert.equal(cefJob.steps.filter((step) => step.run).length, 1);
+  assert.doesNotMatch(build.run, /arch -x86_64|brew install|cmake-js/);
 });
 
 test('pull request CI builds every published architecture', () => {

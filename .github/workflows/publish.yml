@@ -607,78 +607,13 @@ jobs:
         with:
           path: lynxtron
           ref: ${{ needs.get-version.outputs.source_sha }}
-      - name: Install Common Dependencies
-        uses: ./lynxtron/.github/actions/common-deps
-        with:
-          run-habitat-sync: 'false'
-      - name: Prepare environment
-        shell: bash
-        env:
-          HABITAT_CONCURRENCY: 2
-        run: |
-          set -euxo pipefail
-          cd ${{ github.workspace }}/lynxtron
-          git config --global http.version HTTP/1.1
-          git config --global user.name "Lynxtron Scripts"
-          git config --global user.email "scripts@lynxtron.com"
-          source lynxtron_tools/envsetup.sh
-          python3 lynxtron_tools/prepare_build_env.py
-          cd ${{ github.workspace }}/lynxtron/lynx/third_party/weak-node-api/
-          python3 setup_deps.py
-          # Sync CEF binary distribution required by cef-webview CMakeLists.
-          cd ${{ github.workspace }}/lynxtron/src
-          for attempt in 1 2 3; do
-            if "${{ github.workspace }}/lynxtron/lynxtron_tools/hab" sync . -f --no-history --target extension --target-only; then
-              break
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "sync CEF extension dependencies failed after 3 attempts"
-              exit 1
-            fi
-            delay=$((10 * (2 ** (attempt - 1))))
-            echo "sync CEF extension dependencies failed (attempt $attempt/3); retrying in $delay seconds..."
-            sleep "$delay"
-          done
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.14.1
-      - name: Install CMake
-        shell: bash
-        run: |
-          brew install cmake
-          cmake --version
       - name: Build CEF webview
         shell: bash
         run: |
-          set -e
-          set -x
-          VERSION=${{ needs.get-version.outputs.version }}
-          PLATFORM="darwin"
-          ARCH="${{ matrix.arch }}"
-          PACKAGE_DIR=${{ github.workspace }}/lynxtron/src/packages/cef-webview
-          # Install deps via yarn at the workspace root so that workspace:*
-          # protocol is resolved correctly (npm does not support it).
-          cd ${{ github.workspace }}/lynxtron/src
-          node tools/yarn.js install --immutable --mode=skip-build
-          cd "$PACKAGE_DIR"
-          if [ "$ARCH" = "arm64" ]; then
-            export CMAKE_OSX_ARCHITECTURES=arm64
-            npx cmake-js build
-          else
-            export CMAKE_OSX_ARCHITECTURES=x86_64
-            arch -x86_64 npx cmake-js build
-          fi
-          ROOT_NAME="cef_webview-v${VERSION}-${PLATFORM}-${ARCH}"
-          TMP_DIR="$PACKAGE_DIR/_pack_tmp_${ARCH}"
-          rm -rf "$TMP_DIR"
-          mkdir -p "$TMP_DIR/$ROOT_NAME"
-          cp ./build/Release/cef_extension.node "$TMP_DIR/$ROOT_NAME/"
-          mkdir -p "$TMP_DIR/$ROOT_NAME/frameworks"
-          cp -R ./build/frameworks/Contents/Frameworks/* "$TMP_DIR/$ROOT_NAME/frameworks/"
-          mkdir -p ${{ github.workspace }}/lynxtron/publish
-          cd "$TMP_DIR"
-          zip -ry "${{ github.workspace }}/lynxtron/publish/${ROOT_NAME}.zip" "$ROOT_NAME"
-          ls -lh "${{ github.workspace }}/lynxtron/publish/${ROOT_NAME}.zip"
+          cd ${{ github.workspace }}/lynxtron
+          git config --global user.name "Lynxtron Scripts"
+          git config --global user.email "scripts@lynxtron.com"
+          python3 lynxtron_tools/build_cef_webview.py --arch "${{ matrix.arch }}" --version "${{ needs.get-version.outputs.version }}"
       - name: Upload CEF webview artifact
         uses: actions/upload-artifact@v4
         with:

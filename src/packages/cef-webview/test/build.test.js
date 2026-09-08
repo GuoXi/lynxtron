@@ -11,6 +11,22 @@ const source = fs
   .replace(/^import .*;\n/gm, '')
   .replace('const require = createRequire(import.meta.url);', '');
 
+test('CEF receives the Node target before choosing compiler architectures', () => {
+  const cmake = fs.readFileSync(
+    new URL('../CMakeLists.txt', import.meta.url),
+    'utf8'
+  );
+  const setup = cmake.slice(0, cmake.indexOf('find_package(CEF REQUIRED)'));
+  assert.match(
+    setup,
+    /if\(NODE_ARCH STREQUAL "x64"\)\s+set\(PROJECT_ARCH "x86_64"\)/
+  );
+  assert.match(
+    setup,
+    /elseif\(NODE_ARCH STREQUAL "arm64"\)\s+set\(PROJECT_ARCH "arm64"\)/
+  );
+});
+
 for (const arch of ['x64', 'arm64']) {
   test(`arm64 Node passes explicit ${arch} target to cmake-js`, () => {
     let invocation;

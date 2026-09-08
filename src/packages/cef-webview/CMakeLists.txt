@@ -39,6 +39,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
 # Load the CEF configuration.
 #
 # Execute FindCEF.cmake which must exist in CMAKE_MODULE_PATH.
+if(NODE_ARCH STREQUAL "x64")
+  set(PROJECT_ARCH "x86_64")
+elseif(NODE_ARCH STREQUAL "arm64")
+  set(PROJECT_ARCH "arm64")
+elseif(NODE_ARCH STREQUAL "ia32")
+  set(PROJECT_ARCH "x86")
+endif()
 find_package(CEF REQUIRED)
 
 #

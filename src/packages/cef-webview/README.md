@@ -64,6 +64,19 @@ explicitly to the package build. Use `-ImportLibrary <path>` for another
 source-build output. A missing import library fails before compilation instead
 of falling back to a downloaded runtime.
 
+### macOS cross-compilation
+
+From the repository root, use the same entry point as the release workflow:
+
+```bash
+python3 lynxtron_tools/build_cef_webview.py --arch x64
+```
+
+The script prepares host tools and the target CEF SDK, builds the package and
+checks the addon, Framework and helper architectures. Use `--arch arm64` for
+Apple Silicon or add `--version <version>` to produce a release zip in
+`publish/`. No Rosetta Node process or manual Homebrew installation is required.
+
 ## Dependencies
 
 - **Runtime Dependencies:**

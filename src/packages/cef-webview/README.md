@@ -35,21 +35,34 @@ Once initialized, you can use the `<webview>` element in your Lynx templates:
 
 ### Prerequisites
 
-- Node.js >= 18
+- Node.js matching this package's engines
 - CMake
 - CEF SDK
 
 ### Build Steps
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Build the native addon:
-   ```bash
-   npx cmake-js build
-   ```
+After preparing the repository's native dependencies, run the package build
+from `src`:
+
+```bash
+node tools/yarn.js workspace @lynx-js/cef-webview build
+```
+
+This builds the addon and stages runtime files in `dist/<platform>/<arch>`.
+On macOS it also preserves the CEF Framework links; the install script restores
+those links when npm packaging omits them.
+
+On Windows, build the Lynxtron source runtime first, then run the same entry used
+by CI and release builds from the repository root:
+
+```powershell
+.\lynxtron_tools\build_cef_webview.ps1 -Arch x64
+```
+
+The script syncs CEF dependencies and passes `out/Release/lynxtron.dll.lib`
+explicitly to the package build. Use `-ImportLibrary <path>` for another
+source-build output. A missing import library fails before compilation instead
+of falling back to a downloaded runtime.
 
 ## Dependencies
 

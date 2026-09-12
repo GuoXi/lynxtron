@@ -16,7 +16,6 @@
 #include "shell/api/api_menu.h"
 #include "shell/api/api_native_image.h"
 #include "shell/api/dpi_win.h"
-#include "shell/app/resources/win/resource.h"
 #include "shell/app/window_list.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
@@ -1032,18 +1031,6 @@ gfx::Rect NativeWindowWin::WindowBoundsToContentBounds(
 
 ////////////////////////////////////////////////////////////////////////////////
 // HWNDMessageHandlerDelegate implementation:
-
-HICON NativeWindowWin::GetDefaultWindowIcon() const {
-  // Match Electron's default: use the current executable's icon, including
-  // resource replacements made by the app packager. LoadIcon returns a shared
-  // handle that outlives individual windows and must not be destroyed.
-  return ::LoadIconW(::GetModuleHandleW(nullptr),
-                     MAKEINTRESOURCEW(IDR_MAINFRAME));
-}
-
-HICON NativeWindowWin::GetSmallWindowIcon() const {
-  return GetDefaultWindowIcon();
-}
 
 ui::FrameMode NativeWindowWin::GetFrameMode() const {
   return frame() ? ui::FrameMode::SYSTEM_DRAWN : ui::FrameMode::CUSTOM_DRAWN;

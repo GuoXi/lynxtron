@@ -613,6 +613,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
   SendFrameChanged();
 }
 
+HICON HWNDMessageHandler::GetDefaultWindowIcon() const {
+  return delegate_->GetDefaultWindowIcon();
+}
+
+HICON HWNDMessageHandler::GetSmallWindowIcon() const {
+  return delegate_->GetSmallWindowIcon();
+}
+
 LRESULT HWNDMessageHandler::OnWndProc(UINT message,
                                       WPARAM w_param,
                                       LPARAM l_param) {

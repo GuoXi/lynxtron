@@ -41,6 +41,11 @@ enum class FrameMode {
 // notifications from the underlying HWND and service requests for data.
 class HWNDMessageHandlerDelegate {
  public:
+  // Borrowed class icons. They must remain valid until the window class is
+  // unregistered, including after the delegate is destroyed.
+  virtual HICON GetDefaultWindowIcon() const = 0;
+  virtual HICON GetSmallWindowIcon() const = 0;
+
   // Returns the input method currently used in this window.
   // virtual ui::InputMethod* GetHWNDMessageDelegateInputMethod() = 0;
 

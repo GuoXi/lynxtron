@@ -118,6 +118,8 @@ class NativeWindowWin : public NativeWindow,
   ui::WindowShowState GetRestoredState();
 
   // Overridden from HWNDMessageHandlerDelegate:
+  HICON GetDefaultWindowIcon() const override;
+  HICON GetSmallWindowIcon() const override;
   ui::FrameMode GetFrameMode() const override;
   bool HasFrame() const override;
   bool ShouldPaintAsActive() const override;

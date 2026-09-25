@@ -14,6 +14,7 @@ static const char* kMainPartsDelegateName = "MainPartsDelegate";
 class MainPartsDelegate : public GlobalDelegate {
  public:
   virtual void PreInitialization() = 0;
+  // Runs with an entered V8 context before the Node environment is created.
   virtual void PostV8Initialization() = 0;
   virtual void PostInitialization() = 0;
   virtual void PreShutdown() = 0;

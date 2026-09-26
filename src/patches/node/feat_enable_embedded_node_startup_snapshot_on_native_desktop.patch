@@ -13,8 +13,8 @@ Generate a Node startup snapshot from the Chromium V8 blob and link it into the 
  src/node_snapshot_stub.cc         |  11 +++
  src/node_snapshotable.cc          |  12 +++
  tools/snapshot/node_mksnapshot.cc |  37 ++++++++-
- unofficial.gni                    | 127 +++++++++++++++++++++++++-----
- 8 files changed, 198 insertions(+), 30 deletions(-)
+ unofficial.gni                    | 129 ++++++++++++++++++++++++++++++++------
+ 8 files changed, 200 insertions(+), 30 deletions(-)
 
 diff --git a/node.gni b/node.gni
 index b3ec33a9..0ddeb987 100644
@@ -216,7 +216,7 @@ index e446dd16..fd822643 100644
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 02406185..b170a1f2 100644
+index 02406185..cd0ce82f 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -310,9 +310,12 @@ index 02406185..b170a1f2 100644
        script = "$node_v8_path/tools/run.py"
        sources = []
        data = []
-@@ -299,10 +314,82 @@ template("node_gn_build") {
+@@ -298,11 +313,85 @@ template("node_gn_build") {
+       outputs = [ "$target_gen_dir/node_snapshot.cc" ]
        args = [
          "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
++        # Match Chromium Gin's browser-process V8 flag for reusable code cache.
++        "--gc-memory-reducer-start-delay-ms=30000",
          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
 +
 +        # Chromium's V8 has external startup data, so node_mksnapshot must
@@ -395,4 +398,3 @@ index 02406185..b170a1f2 100644
      script = "tools/generate_config_gypi.py"
 -- 
 2.55.0
-

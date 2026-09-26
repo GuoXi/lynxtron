@@ -155,20 +155,13 @@ void MainParts::Initialize() {
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  // Delegates run before Node creates its snapshot context and have always
-  // received an entered context. Preserve that contract when one is present.
   const bool from_node_snapshot =
-      node::SnapshotBuilder::GetEmbeddedSnapshotData() != nullptr &&
-      !main_parts_delegate_;
+      node::SnapshotBuilder::GetEmbeddedSnapshotData() != nullptr;
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop(),
                                                     false, from_node_snapshot);
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope(isolate);
-  if (main_parts_delegate_) {
-    CHECK(!isolate->GetCurrentContext().IsEmpty());
-    main_parts_delegate_->PostV8Initialization();
-  }
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   node_bindings_->Initialize(isolate, context);
 
@@ -180,6 +173,12 @@ void MainParts::Initialize() {
     node_env_->context()->Enter();
     // The normal path registers the profiler after entering its context.
     js_env_->InitializeRuntimeProfiler();
+  }
+  // The snapshot context is restored by CreateEnvironment, so run delegates
+  // only after the main context is entered on both initialization paths.
+  if (main_parts_delegate_) {
+    CHECK(!isolate->GetCurrentContext().IsEmpty());
+    main_parts_delegate_->PostNodeEnvironmentInitialization();
   }
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 

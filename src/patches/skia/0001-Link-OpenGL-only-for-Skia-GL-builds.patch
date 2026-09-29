@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guo Xi <guoxi.gx@bytedance.com>
+Date: Tue, 29 Sep 2026 23:05:37 +0800
+Subject: [PATCH] Link OpenGL only for Skia GL builds
+
+---
+diff --git a/BUILD.gn b/BUILD.gn
+index 1da9daf..a828edd 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -1764,8 +1764,10 @@ skia_component("skia") {
+       ]
+       frameworks = [
+         "ApplicationServices.framework",
+-        "OpenGL.framework",
+       ]
++      if (skia_use_gl) {
++        frameworks += [ "OpenGL.framework" ]
++      }
+     }
+ 
+     if (is_ios || is_tvos) {

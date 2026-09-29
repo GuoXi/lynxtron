@@ -12,7 +12,15 @@ deps = {
         "commands": [
             "python3 src/script/apply_all_patches.py src/patches/config.json",
         ],
-        "require": ["../base", "../build", "../third_party/node", "../url", "../tools", "../v8"],
+        "require": [
+            "../base",
+            "../build",
+            "../third_party/node",
+            "../third_party/skia",
+            "../url",
+            "../tools",
+            "../v8",
+        ],
     },
     '../build/toolchain/win/rc/win/rc.exe': {
         "type": "http",

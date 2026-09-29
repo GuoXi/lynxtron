@@ -968,8 +968,6 @@ if (is_mac) {
       "IOSurface.framework",
       "Metal.framework",
       "QuartzCore.framework",
-      "OpenGL.framework",
-      "JavaScriptCore.framework",
       "WebKit.framework",
     ]
   }

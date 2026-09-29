@@ -66,6 +66,8 @@ def get_default_gn_args(is_debug, enable_enlarge_stack, enable_inspector):
   if get_current_os() == 'mac':
     gn_args += 'skia_gl_standard=""'
     gn_args += 'skia_use_metal=true '
+    # Lynxtron uses Metal for macOS rendering, including windowless rendering.
+    gn_args += 'skia_use_gl=false '
     gn_args += 'shell_enable_metal=true '
     gn_args += 'use_clang_static_analyzer=false '
     gn_args += 'use_flutter_cxx=false '

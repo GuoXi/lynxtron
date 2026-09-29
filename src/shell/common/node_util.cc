@@ -20,6 +20,7 @@
 #include "gin/converter.h"
 #include "shell/app/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/js2c_code_cache.h"
 #include "shell/common/node_includes.h"
 //
 #include "third_party/node/src/node_process-inl.h"
@@ -35,6 +36,14 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   v8::TryCatch try_catch{isolate};
 
   thread_local node::builtins::BuiltinLoader builtin_loader;
+  thread_local bool cache_initialized = false;
+  if (!cache_initialized) {
+    const auto& cache = Js2cCustomWrapperCodeCache();
+    if (!cache.empty()) {
+      builtin_loader.RefreshCodeCache(cache);
+    }
+    cache_initialized = true;
+  }
   v8::MaybeLocal<v8::Function> compiled = builtin_loader.LookupAndCompile(
       context, id, parameters, node::Realm::GetCurrent(context));
 

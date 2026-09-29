@@ -296,6 +296,58 @@ action("lynxtron_js2c") {
          rebase_path(sources, root_gen_dir)
 }
 
+# The node_init bundle is called with (process, require), while Node's
+# snapshot caches it with the standard six-parameter builtin wrapper.
+# Generate a matching cache against the shipped Node snapshot.
+if (host_os == target_os && node_use_node_snapshot) {
+  if (current_toolchain == v8_snapshot_toolchain) {
+    executable("lynxtron_js2c_codecache") {
+      configs += [ "//build/config/compiler:no_chromium_code" ]
+      configs -= [ "//build/config/compiler:chromium_code" ]
+      sources = [ "shell/common/js2c_code_cache_main.cc" ]
+      include_dirs = [
+        ".",
+        "//",
+      ]
+      deps = [
+        "//third_party/node:libnode",
+        "//third_party/node:node_snapshot",
+        "//third_party/zstd:compress",
+      ]
+      if (enable_trace == "perfetto") {
+        deps += [ "//lynx/base/trace/native:trace" ]
+      }
+    }
+  }
+
+  action("run_lynxtron_js2c_codecache") {
+    deps = [ ":lynxtron_js2c_codecache($v8_snapshot_toolchain)" ]
+    script = "//v8/tools/run.py"
+    tool_dir =
+        get_label_info(":lynxtron_js2c_codecache($v8_snapshot_toolchain)",
+                       "root_out_dir")
+    outputs = [ "$root_gen_dir/lynxtron_js2c_code_cache.cc" ]
+    if (node_use_node_code_cache) {
+      bundle_selection = "node-init-only"
+    } else {
+      bundle_selection = "all"
+    }
+
+    # Node sets the first two flags in InitializeOncePerProcess. Gin's
+    # kV8DelayMemoryReducer supplies the delay at runtime; node.gni shares
+    # its value with node_mksnapshot. Acceptance specs catch flag drift.
+    code_cache_v8_flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+                          "--gc-memory-reducer-start-delay-ms=" +
+                          "$node_snapshot_gc_memory_reducer_start_delay_ms"
+    args = [
+      "./" + rebase_path(tool_dir + "/lynxtron_js2c_codecache", root_build_dir),
+      rebase_path(outputs[0], root_build_dir),
+      bundle_selection,
+      code_cache_v8_flags,
+    ]
+  }
+}
+
 target_gen_default_app_js = "$root_gen_dir/lynxtron/js/default_app"
 
 typescript_build("default_app_js") {
@@ -466,6 +518,9 @@ source_set("lynxtron_lib") {
     "//v8",
     "//v8:v8_libplatform",
   ]
+  if (host_os == target_os && node_use_node_snapshot) {
+    deps += [ ":run_lynxtron_js2c_codecache" ]
+  }
   deps += lynxtron_lib_extra_deps
 
   deps += lynxtron_resource_fetcher_deps
@@ -596,6 +651,8 @@ source_set("lynxtron_lib") {
     "shell/common/global_thread.h",
     "shell/common/io_thread.cc",
     "shell/common/io_thread.h",
+    "shell/common/js2c_bundle_ids.h",
+    "shell/common/js2c_code_cache.h",
     "shell/common/key_weak_map.h",
     "shell/common/logging.cc",
     "shell/common/logging.h",
@@ -638,6 +695,12 @@ source_set("lynxtron_lib") {
     "shell/ui/tray_icon.cc",
     "shell/ui/tray_icon.h",
   ]
+
+  if (host_os == target_os && node_use_node_snapshot) {
+    sources += [ "$root_gen_dir/lynxtron_js2c_code_cache.cc" ]
+  } else {
+    sources += [ "shell/common/js2c_code_cache_stub.cc" ]
+  }
 
   sources += gin_helper_sources
 

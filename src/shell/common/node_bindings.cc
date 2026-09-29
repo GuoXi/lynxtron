@@ -37,6 +37,8 @@
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
+#include "shell/common/js2c_bundle_ids.h"
+#include "shell/common/js2c_code_cache.h"
 #include "shell/common/lynxtron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
@@ -500,7 +502,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   const bool is_only_load_app_from_asar_enabled =
       fuses::IsOnlyLoadAppFromAsarEnabled();
 
-  std::string init_script = "lynxtron/js2c/browser_init";
+  std::string init_script = js2c::kBrowserInitId;
 
   args.insert(args.begin() + 1, init_script);
 
@@ -621,6 +623,12 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
+  // A cross-architecture build supplies browser_init here. Keep node_init's
+  // two-parameter cache on the separate CompileAndCall loader.
+  const auto& cache = Js2cStandardWrapperCodeCache();
+  if (!cache.empty()) {
+    env->builtin_loader()->RefreshCodeCache(cache);
+  }
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
@@ -769,12 +777,10 @@ void OnNodePreload(node::Environment* env,
   }
 
   // Execute lib/node/init.ts.
-  v8::LocalVector<v8::String> bundle_params(
-      env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
-                       node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
+  auto bundle_params = js2c::MakeNodeInitParams(env->isolate());
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
-  util::CompileAndCall(env->isolate(), env->context(),
-                       "lynxtron/js2c/node_init", &bundle_params, &bundle_args);
+  util::CompileAndCall(env->isolate(), env->context(), js2c::kNodeInitId,
+                       &bundle_params, &bundle_args);
 }
 
 }  // namespace lynxtron

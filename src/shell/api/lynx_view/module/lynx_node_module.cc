@@ -19,9 +19,12 @@
 #include "base/logging.h"
 #include "lynx/platform/embedder/public/capi/lynx_env_capi.h"
 #include "platform/embedder/public/lynx_extension_module.h"
+#include "shell/common/js2c_bundle_ids.h"
+#include "shell/common/js2c_code_cache.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "third_party/napi/include/napi_env_v8.h"
+#include "third_party/node/src/node_snapshot_builder.h"
 
 #ifdef USE_WEAK_SUFFIX_NAPI
 #include "third_party/weak-node-api/headers/weak_napi_defines.h"
@@ -207,11 +210,23 @@ v8::Local<v8::Context> LynxNodeModule::CreateNewNodeContext(
   // upstream Node.js may fall back to interactive REPL mode when stdin is a
   // TTY. The embedded Node environment used for BTS preloads should never
   // start a REPL.
-  std::vector<std::string> args = {"lynxbts_node",
-                                   "lynxtron/js2c/lynxbts_init"};
+  std::vector<std::string> args = {"lynxbts_node", js2c::kLynxBtsInitId};
   env_ = node::CreateEnvironment(
       isolate_data_, new_context, std::move(args), {},
       static_cast<node::EnvironmentFlags::Flags>(kInitNodeEnvflags));
+
+  // This Node context is created inside Lynx's Isolate, so it does not
+  // deserialize a Node Environment. Its V8 Isolate still uses the embedded
+  // snapshot and can consume the builtin caches generated against it.
+  const node::SnapshotData* snapshot =
+      node::SnapshotBuilder::GetEmbeddedSnapshotData();
+  if (snapshot && !snapshot->code_cache.empty()) {
+    env_->builtin_loader()->RefreshCodeCache(snapshot->code_cache);
+  }
+  const auto& js2c_cache = Js2cStandardWrapperCodeCache();
+  if (!js2c_cache.empty()) {
+    env_->builtin_loader()->RefreshCodeCache(js2c_cache);
+  }
 
   node::LoadEnvironment(env_, node::StartExecutionCallback{},
                         [](node::Environment* env, v8::Local<v8::Value> process,

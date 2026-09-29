@@ -33,9 +33,15 @@ interface NodeModeResult {
   digest: string;
 }
 
+interface BtsResult {
+  method: string;
+  from: string;
+}
+
 const fixturePath = path.join(__dirname, 'fixtures', 'node-snapshot-startup');
 const resultPrefix = 'NODE_SNAPSHOT_RESULT ';
 const nodeModeResultPrefix = 'NODE_MODE_SNAPSHOT_RESULT ';
+const btsResultPrefix = 'NODE_BTS_RESULT ';
 const execFileAsync = promisify(childProcess.execFile);
 const supportsNodeStartupSnapshot =
   (process.platform === 'darwin' &&
@@ -101,6 +107,14 @@ function expectNodeCodeCache(stderr: string): void {
   expect(accepted).to.include('crypto');
 }
 
+function expectJs2cCodeCache(stderr: string): void {
+  for (const id of ['lynxtron/js2c/browser_init', 'lynxtron/js2c/node_init']) {
+    expect(stderr, `${id} should consume code cache`).to.match(
+      new RegExp(`^Code cache of ${id} \\([^)]+\\) is accepted\\r?$`, 'm')
+    );
+  }
+}
+
 ifdescribe(supportsNodeStartupSnapshot)('Node startup snapshot', () => {
   it('exposes the browser Node environment after app ready', () => {
     expect(app.isReady()).to.equal(true);
@@ -143,6 +157,10 @@ ifdescribe(supportsNodeStartupSnapshot)('Node startup snapshot', () => {
     ifit(hasNodeCodeCache)('consumes Node builtin code cache', () => {
       expectNodeCodeCache(fixtureRun.stderr);
     });
+
+    it('consumes the browser and node_init js2c code caches', () => {
+      expectJs2cCodeCache(fixtureRun.stderr);
+    });
   });
 
   describe('LYNXTRON_RUN_AS_NODE startup', () => {
@@ -176,6 +194,30 @@ ifdescribe(supportsNodeStartupSnapshot)('Node startup snapshot', () => {
 
     ifit(hasNodeCodeCache)('consumes Node builtin code cache', () => {
       expectNodeCodeCache(fixtureRun.stderr);
+    });
+
+    it('consumes the node_init js2c code cache', () => {
+      expect(fixtureRun.stderr).to.match(
+        /^Code cache of lynxtron\/js2c\/node_init \([^)]+\) is accepted\r?$/m
+      );
+    });
+  });
+
+  ifdescribe(process.platform !== 'win32')('Lynx BTS Node context', () => {
+    it('consumes the lynxbts_init js2c code cache', async function () {
+      this.timeout(45000);
+      const { result, stderr } = await runFixture<BtsResult>(
+        path.join(fixturePath, 'bts-main.js'),
+        btsResultPrefix,
+        false
+      );
+      expect(result).to.deep.equal({
+        method: 'nodejs_event',
+        from: 'contextBridge',
+      });
+      expect(stderr).to.match(
+        /^Code cache of lynxtron\/js2c\/lynxbts_init \([^)]+\) is accepted\r?$/m
+      );
     });
   });
 });

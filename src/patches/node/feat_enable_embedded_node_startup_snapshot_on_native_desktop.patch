@@ -1,4 +1,4 @@
-From b77f14654a8284dc1be0146b2b71c6091a0075e2 Mon Sep 17 00:00:00 2001
+From 0d87a59feb378ac471a8ee25548083f001d42b97 Mon Sep 17 00:00:00 2001
 From: Guo Xi <guoxi349@gmail.com>
 Date: Fri, 25 Sep 2026 20:45:59 +0800
 Subject: [PATCH] Enable embedded Node snapshot on macOS, Windows, and Linux
@@ -7,30 +7,35 @@ Generate a Node startup snapshot from the Chromium V8 blob and link it into the 
 Patch-Dir: ../../src/patches/node
 Patch-Filename: feat_enable_embedded_node_startup_snapshot_on_native_desktop.patch
 ---
- node.gni                          |  23 ++++--
+ node.gni                          |  27 +++++--
  src/api/embed_helpers.cc          |  15 +++-
  src/api/environment.cc            |   6 ++
+ src/node_builtins.cc              |   9 +--
  src/node_external_reference.h     |   5 ++
  src/node_snapshot_builder.h       |   9 +++
  src/node_snapshotable.cc          |  12 +++
  tools/snapshot/node_mksnapshot.cc |  37 ++++++++-
  unofficial.gni                    | 128 +++++++++++++++++++++++++-----
- 8 files changed, 205 insertions(+), 30 deletions(-)
+ 9 files changed, 213 insertions(+), 35 deletions(-)
 
 diff --git a/node.gni b/node.gni
-index d4adaf8ea1..8df69d89e9 100644
+index d4adaf8ea18..7df5be51423 100644
 --- a/node.gni
 +++ b/node.gni
-@@ -33,6 +33,8 @@ declare_args() {
+@@ -33,6 +33,12 @@ declare_args() {
    ]
  }
  
 +import("$node_v8_path/gni/snapshot_toolchain.gni")
 +
++# Gin's default kV8MemoryReducerStartDelay is 30 seconds. Both the Node
++# snapshot and Lynxtron's js2c code cache must use the runtime flag value.
++node_snapshot_gc_memory_reducer_start_delay_ms = 30000
++
  # Equivalent of gyp file's configurations.
  declare_args() {
    # Enable the V8 inspector protocol for use with node.
-@@ -66,11 +68,22 @@ declare_args() {
+@@ -66,11 +72,22 @@ declare_args() {
    # Use code cache to speed up startup. Disabled for cross compilation.
    node_use_node_code_cache = host_os == target_os && host_cpu == target_cpu
  
@@ -59,7 +64,7 @@ index d4adaf8ea1..8df69d89e9 100644
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
 diff --git a/src/api/embed_helpers.cc b/src/api/embed_helpers.cc
-index 14d2a20c1c..3c1683335a 100644
+index 14d2a20c1c1..3c1683335ae 100644
 --- a/src/api/embed_helpers.cc
 +++ b/src/api/embed_helpers.cc
 @@ -112,13 +112,18 @@ CommonEnvironmentSetup::CommonEnvironmentSetup(
@@ -99,7 +104,7 @@ index 14d2a20c1c..3c1683335a 100644
      // Wait until the platform has cleaned up all relevant resources.
      while (!platform_finished)
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 244d747f01..7b69b7902e 100644
+index 244d747f010..7b69b7902e4 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -322,6 +322,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
@@ -115,8 +120,28 @@ index 244d747f01..7b69b7902e 100644
    }
  
  #ifdef NODE_V8_SHARED_RO_HEAP
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index da55d123ca5..0134bc5acac 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -576,11 +576,10 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+ void BuiltinLoader::RefreshCodeCache(const std::vector<CodeCacheInfo>& in) {
+   RwLock::ScopedLock lock(code_cache_->mutex);
+-  code_cache_->map.reserve(in.size());
+-  DCHECK(code_cache_->map.empty());
++  // Lynxtron's js2c cache can supplement or replace entries restored from
++  // the embedded Node snapshot after the Environment has been created.
++  code_cache_->map.reserve(code_cache_->map.size() + in.size());
+   for (auto const& item : in) {
+-    auto result = code_cache_->map.emplace(item.id, item.data);
+-    USE(result.second);
+-    DCHECK(result.second);
++    code_cache_->map.insert_or_assign(item.id, item.data);
+   }
+   code_cache_->has_code_cache = true;
+ }
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index b97f306ddf..73a87c7471 100644
+index b97f306ddf4..73a87c74710 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
 @@ -41,6 +41,11 @@ class ExternalReferenceRegistry {
@@ -132,7 +157,7 @@ index b97f306ddf..73a87c7471 100644
      RegisterT(c_func.GetTypeInfo());
    }
 diff --git a/src/node_snapshot_builder.h b/src/node_snapshot_builder.h
-index e2302946d1..c120ec2f93 100644
+index e2302946d1f..c120ec2f931 100644
 --- a/src/node_snapshot_builder.h
 +++ b/src/node_snapshot_builder.h
 @@ -44,6 +44,15 @@ class NODE_EXTERN_PRIVATE SnapshotBuilder {
@@ -152,7 +177,7 @@ index e2302946d1..c120ec2f93 100644
                                   CommonEnvironmentSetup* setup);
  
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index a500204c47..21bb8c75bf 100644
+index a500204c476..21bb8c75bf9 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -865,6 +865,18 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
@@ -175,7 +200,7 @@ index a500204c47..21bb8c75bf 100644
                                                Isolate::CreateParams* params) {
    CHECK_NULL(params->external_references);
 diff --git a/tools/snapshot/node_mksnapshot.cc b/tools/snapshot/node_mksnapshot.cc
-index e446dd1668..fd822643be 100644
+index e446dd1668d..fd822643bec 100644
 --- a/tools/snapshot/node_mksnapshot.cc
 +++ b/tools/snapshot/node_mksnapshot.cc
 @@ -1,7 +1,8 @@
@@ -230,7 +255,7 @@ index e446dd1668..fd822643be 100644
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 0240618595..e6b5a93add 100644
+index 0240618595f..4af7451097a 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,11 @@ template("node_gn_build") {
@@ -328,7 +353,7 @@ index 0240618595..e6b5a93add 100644
        args = [
          "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
 +        # Match Chromium Gin's browser-process V8 flag for reusable code cache.
-+        "--gc-memory-reducer-start-delay-ms=30000",
++        "--gc-memory-reducer-start-delay-ms=$node_snapshot_gc_memory_reducer_start_delay_ms",
          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
 +
 +        # Chromium's V8 has external startup data, so node_mksnapshot must
@@ -411,4 +436,3 @@ index 0240618595..e6b5a93add 100644
      script = "tools/generate_config_gypi.py"
 -- 
 2.55.0
-

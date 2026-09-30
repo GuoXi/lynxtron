@@ -78,6 +78,25 @@ export interface Menu extends EventEmitter {}
 export declare class Menu {
   constructor();
   static getApplicationMenu(): Menu | null;
+  /**
+   * Sets the application menu.
+   *
+   * On macOS, no menu is installed automatically. The application chooses
+   * when to call this method, either before or after app.whenReady(). Native
+   * installation is queued on the current run loop; menu initialization can
+   * block the main thread, rendering and input handling.
+   *
+   * For startup-sensitive applications, prefer a stage after the first window
+   * has submitted its first frame and startup-critical work has completed,
+   * before the application needs menu commands or accelerators.
+   * app.whenReady(), ready-to-show and on-first-screen do not guarantee that
+   * a frame has been submitted. A setImmediate or fixed timeout does not
+   * provide that guarantee either; coordinate with the application's startup
+   * lifecycle rather than treating these callbacks as frame completion.
+   *
+   * @param menu The menu to install. On macOS, null clears the menu items and
+   * standard menu registrations without installing a default menu.
+   */
   static setApplicationMenu(menu: Menu | null): void;
   static sendActionToFirstResponder(action: string): void;
   static buildFromTemplate(

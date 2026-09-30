@@ -16,7 +16,9 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/task/sequenced_task_runner.h"
+#include "gin/arguments.h"
 #include "shell/api/api_base_window.h"
+#import "shell/app/mac/lynxtron_application.h"
 #include "shell/app/native_window.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
@@ -263,24 +265,42 @@ void MenuMac::OnClosed(int32_t window_id, uint64_t popup_serial) {
   std::move(callback).Run();
 }
 
-void Menu::SetApplicationMenu(Menu* base_menu) {
+void Menu::SetApplicationMenu(gin::Arguments* args) {
+  v8::Local<v8::Value> value;
+  Menu* base_menu = nullptr;
+  if (!args->GetNext(&value) ||
+      (!value->IsNull() &&
+       !gin::ConvertFromV8(args->isolate(), value, &base_menu))) {
+    args->ThrowTypeError("Invalid menu");
+    return;
+  }
+
+  auto* application = [LynxtronApplication sharedApplication];
+  NSRunLoop* current_run_loop = [NSRunLoop currentRunLoop];
+  [current_run_loop
+      cancelPerformSelector:@selector(installLynxtronApplicationMenu:)
+                     target:application
+                   argument:applicationMenu_];
+
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  LynxtronMenuController* menu_controller =
-      [[LynxtronMenuController alloc] initWithModel:menu->model_.get()
-                              useDefaultAccelerator:YES];
+  if (menu) {
+    LynxtronMenuController* menu_controller =
+        [[LynxtronMenuController alloc] initWithModel:menu->model_.get()
+                                useDefaultAccelerator:YES];
+    applicationMenu_ = [menu_controller menu];
+    menu->menu_controller_ = menu_controller;
+  } else {
+    applicationMenu_ = nil;
+  }
 
-  NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
-  [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)
-                                 target:NSApp
-                               argument:applicationMenu_];
-  applicationMenu_ = [menu_controller menu];
-  [[NSRunLoop currentRunLoop] performSelector:@selector(setMainMenu:)
-                                       target:NSApp
-                                     argument:applicationMenu_
-                                        order:0
-                                        modes:@[ NSDefaultRunLoopMode ]];
-
-  menu->menu_controller_ = menu_controller;
+  // Use an explicit entry point so AppKit's fallback assignments cannot
+  // create a menu or replace one supplied by the application.
+  [current_run_loop
+      performSelector:@selector(installLynxtronApplicationMenu:)
+               target:application
+             argument:applicationMenu_
+                order:0
+                modes:@[ NSDefaultRunLoopMode ]];
 }
 
 void Menu::SendActionToFirstResponder(const std::string& action) {

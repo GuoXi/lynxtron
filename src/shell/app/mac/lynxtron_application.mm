@@ -25,6 +25,30 @@
   return (LynxtronApplication*)[super sharedApplication];
 }
 
+- (void)setMainMenu:(NSMenu*)menu {
+  // AppKit calls this during finishLaunching to install its fallback menu.
+  // Leave menu creation and its initialization cost under application control.
+  if (!installing_application_menu_) {
+    return;
+  }
+  [super setMainMenu:menu];
+}
+
+- (void)installLynxtronApplicationMenu:(NSMenu*)menu {
+  if (!menu) {
+    // Keep an installed menu-bar root alive. Setting it to nil makes AppKit
+    // create a fallback menu, defeating the application's request to clear it.
+    [[self mainMenu] removeAllItems];
+    [self setWindowsMenu:nil];
+    [self setServicesMenu:nil];
+    [self setHelpMenu:nil];
+    return;
+  }
+  // AppKit makes nested assignments while initializing the first menu bar.
+  base::AutoReset<BOOL> installing(&installing_application_menu_, YES);
+  [super setMainMenu:menu];
+}
+
 - (void)willPowerOff:(NSNotification*)notify {
   userStoppedShutdown_ = shouldShutdown_ && !shouldShutdown_.Run();
 }

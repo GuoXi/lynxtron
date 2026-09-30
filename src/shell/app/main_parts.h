@@ -67,7 +67,6 @@ class MainParts {
   void FreeAppDelegate();
   void InitializeMacMainMessageLoop();
   void RegisterURLHandler();
-  void InitializeMainNib();
   void RegisterAtomCrApp();
 #endif
 #endif

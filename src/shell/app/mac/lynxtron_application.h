@@ -24,10 +24,15 @@
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   BOOL userStoppedShutdown_;
+  BOOL installing_application_menu_;
   base::RepeatingCallback<bool()> shouldShutdown_;
 }
 
 + (LynxtronApplication*)sharedApplication;
+
+// Installs only menus explicitly supplied through Menu.setApplicationMenu.
+// Passing nil clears menu items and standard menu registrations.
+- (void)installLynxtronApplicationMenu:(NSMenu*)menu;
 
 - (void)setShutdownHandler:(base::RepeatingCallback<bool()>)handler;
 - (void)registerURLHandler;

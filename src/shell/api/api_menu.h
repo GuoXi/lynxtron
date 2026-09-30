@@ -49,7 +49,9 @@ class Menu : public gin_helper::DeprecatedWrappable<Menu>,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Menu"; }
 
-#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC)
+  static void SetApplicationMenu(gin::Arguments* args);
+#elif BUILDFLAG(IS_WIN)
   static void SetApplicationMenu(Menu* menu);
 #endif
 #if BUILDFLAG(IS_MAC)

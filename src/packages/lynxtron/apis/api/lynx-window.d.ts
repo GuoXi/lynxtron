@@ -285,6 +285,14 @@ export declare class LynxWindow extends BaseWindow {
   constructor(options?: LynxWindowConstructorOptions);
   on(event: '-lynx-invoke', listener: LynxBridgeInvokeListener): this;
   on(event: '-lynx-message', listener: LynxBridgeMessageListener): this;
+  /**
+   * Emitted when Lynx completes the first screen layout. The notification is
+   * delivered on the application main thread.
+   *
+   * This is a layout milestone; it does not guarantee that rasterization,
+   * first frame submission or presentation on screen has completed.
+   */
+  on(event: 'on-first-screen', listener: (event: Event) => void): this;
   on(
     event: 'app-command',
     listener: (event: Event, command: string) => void

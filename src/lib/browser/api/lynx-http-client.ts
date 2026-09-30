@@ -2,9 +2,6 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-const http = require('http');
-const https = require('https');
-
 export type LynxHttpRequestOptions = {
   url: string;
   method?: string;
@@ -124,7 +121,10 @@ export function requestHttpBuffer({
         return;
       }
 
-      const transport = requestUrl.protocol === 'https:' ? https : http;
+      const transport =
+        requestUrl.protocol === 'https:'
+          ? (require('https') as typeof import('https'))
+          : (require('http') as typeof import('http'));
       const req = transport.request(
         requestUrl,
         { method: requestMethod, headers: requestHeaders },

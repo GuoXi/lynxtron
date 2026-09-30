@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import { EventEmitter } from 'events';
-import * as childProcess from 'child_process';
+import type * as childProcess from 'child_process';
 import type {
   UtilityProcess as UtilityProcessType,
   ForkOptions,
@@ -56,6 +56,8 @@ class UtilityProcess extends EventEmitter implements UtilityProcessType {
   }
 
   static fork(modulePath: string, args?: string[], options?: ForkOptions) {
+    const childProcess =
+      require('child_process') as typeof import('child_process');
     const child = childProcess.fork(modulePath, args, {
       ...options,
       serialization: 'advanced',

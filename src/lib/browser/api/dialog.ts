@@ -2,8 +2,8 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { app, BaseWindow } from 'lynxtron';
 import type {
+  BaseWindow,
   OpenDialogOptions,
   OpenDialogReturnValue,
   MessageBoxOptions,
@@ -64,6 +64,7 @@ const normalizeAccessKey = (text: string) => {
 };
 
 const checkAppInitialized = function () {
+  const { app } = require('lynxtron') as typeof import('lynxtron');
   if (!app.isReady()) {
     throw new Error('dialog module can only be used after app is ready');
   }
@@ -301,6 +302,7 @@ export function showOpenDialog(
   windowOrOptions: BaseWindow | OpenDialogOptions,
   maybeOptions?: OpenDialogOptions
 ): OpenDialogReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -323,6 +325,7 @@ export function showOpenDialogSync(
   windowOrOptions: BaseWindow | OpenDialogOptions,
   maybeOptions?: OpenDialogOptions
 ): OpenDialogReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -345,6 +348,7 @@ export function showSaveDialog(
   windowOrOptions: BaseWindow | SaveDialogOptions,
   maybeOptions?: SaveDialogOptions
 ): SaveDialogReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -367,6 +371,7 @@ export function showSaveDialogSync(
   windowOrOptions: BaseWindow | SaveDialogOptions,
   maybeOptions?: SaveDialogOptions
 ): SaveDialogReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -389,6 +394,7 @@ export function showMessageBox(
   windowOrOptions: BaseWindow | MessageBoxOptions,
   maybeOptions?: MessageBoxOptions
 ): MessageBoxReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -411,6 +417,7 @@ export function showMessageBoxSync(
   windowOrOptions: BaseWindow | MessageBoxOptions,
   maybeOptions?: MessageBoxOptions
 ): MessageBoxReturnValue {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null
@@ -430,6 +437,7 @@ export function showCertificateTrustDialog(
   windowOrOptions: BaseWindow | CertificateTrustDialogOptions,
   maybeOptions?: CertificateTrustDialogOptions
 ) {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const window =
     windowOrOptions && !(windowOrOptions instanceof BaseWindow)
       ? null

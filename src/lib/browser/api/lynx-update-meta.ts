@@ -2,7 +2,7 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import LynxTemplateData from './lynx-template-data';
+import type LynxTemplateData from './lynx-template-data';
 
 type LynxUpdateMetaInit = {
   updateData?: LynxTemplateData;

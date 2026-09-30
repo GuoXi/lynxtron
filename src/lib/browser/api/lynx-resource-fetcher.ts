@@ -2,11 +2,6 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import * as fs from 'fs';
-import { fileURLToPath } from 'url';
-
-import { requestHttpBuffer } from './lynx-http-client';
-
 export interface LynxFetchReplayData {
   url: string;
   statusCode: number;
@@ -27,6 +22,8 @@ export async function onResourceFetcher(
   try {
     const parsedUrl = new URL(urlString);
     if (parsedUrl.protocol === 'file:') {
+      const fs = require('fs') as typeof import('fs');
+      const { fileURLToPath } = require('url') as typeof import('url');
       const data = await fs.promises.readFile(fileURLToPath(parsedUrl));
       event.sendReply({ url: parsedUrl.href, statusCode: 0, data });
       return;
@@ -42,6 +39,8 @@ export async function onResourceFetcher(
       return;
     }
 
+    const { requestHttpBuffer } =
+      require('./lynx-http-client') as typeof import('./lynx-http-client');
     const result = await requestHttpBuffer({ url: parsedUrl.href });
     const code = result.statusCode === 200 ? 0 : result.statusCode || 1;
     event.sendReply({ url: result.url, statusCode: code, data: result.data });

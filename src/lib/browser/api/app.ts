@@ -2,10 +2,6 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Menu } from 'lynxtron';
-
-import * as fs from 'fs';
-
 const bindings = process._linkedBinding('lynxtron_binding_app');
 const commandLine = process._linkedBinding('lynxtron_binding_command_line');
 const { app } = bindings;
@@ -42,9 +38,11 @@ Object.assign(app, {
 // do in native land
 Object.defineProperty(app, 'applicationMenu', {
   get() {
+    const { Menu } = require('lynxtron') as typeof import('lynxtron');
     return Menu.getApplicationMenu();
   },
   set(menu: Lynxtron.Menu | null) {
+    const { Menu } = require('lynxtron') as typeof import('lynxtron');
     return Menu.setApplicationMenu(menu);
   },
 });
@@ -69,6 +67,7 @@ if (process.platform === 'linux') {
 
   const getStatus = (pid: number) => {
     try {
+      const fs = require('fs') as typeof import('fs');
       return fs.readFileSync(`/proc/${pid}/status`, 'utf8');
     } catch {
       return '';

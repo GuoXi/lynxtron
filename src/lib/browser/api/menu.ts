@@ -2,9 +2,7 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { sortMenuItems } from '@lynxtron/internal/browser/api/menu-utils';
-
-import { BaseWindow, MenuItem } from 'lynxtron';
+import type { MenuItem } from 'lynxtron';
 
 const bindings = process._linkedBinding('lynxtron_binding_menu');
 
@@ -29,6 +27,7 @@ let groupIdIndex = 0;
   const item = this.commandsMap[id];
   if (!item) return false;
 
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const focusedWindow = BaseWindow.getFocusedWindow();
 
   if (item.role === 'minimize' && focusedWindow?.isMinimizable?.()) {
@@ -93,6 +92,7 @@ if (process.platform === 'darwin') {
 (Menu.prototype as any)._executeCommand = function (event: any, id: number) {
   const command = this.commandsMap[id];
   if (!command) return;
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const focusedWindow = BaseWindow.getFocusedWindow();
   command.click(event, focusedWindow);
 };
@@ -118,6 +118,7 @@ Menu.prototype.popup = function (options: any = {}) {
   if (typeof y !== 'number') y = -1;
   if (typeof positioningItem !== 'number') positioningItem = -1;
 
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   const wins = BaseWindow.getAllWindows();
   if (!wins || !wins.includes(window as any)) {
     window = BaseWindow.getFocusedWindow() as any;
@@ -134,6 +135,7 @@ Menu.prototype.popup = function (options: any = {}) {
 };
 
 Menu.prototype.closePopup = function (window?: any) {
+  const { BaseWindow } = require('lynxtron') as typeof import('lynxtron');
   if (window instanceof BaseWindow) {
     this.closePopupAt(window.id);
   } else {
@@ -186,6 +188,7 @@ Menu.prototype.append = function (item: any) {
 };
 
 Menu.prototype.insert = function (pos: number, item: any) {
+  const { MenuItem } = require('lynxtron') as typeof import('lynxtron');
   if ((item ? item.constructor : undefined) !== MenuItem) {
     throw new TypeError('Invalid item');
   }
@@ -259,6 +262,7 @@ Menu.buildFromTemplate = function (template: any[]) {
   const sorted = sortTemplate(template);
   const filtered = removeExtraSeparators(sorted);
 
+  const { MenuItem } = require('lynxtron') as typeof import('lynxtron');
   const menu = new Menu();
   for (const item of filtered) {
     if (item instanceof MenuItem) {
@@ -283,6 +287,8 @@ function areValidTemplateItems(template: any[]) {
 }
 
 function sortTemplate(template: any[]) {
+  const { sortMenuItems } =
+    require('./menu-utils') as typeof import('./menu-utils');
   const sorted = sortMenuItems(template);
   for (const item of sorted) {
     if (Array.isArray(item.submenu)) {

@@ -4,7 +4,12 @@
 
 // @ts-nocheck
 
-import { app, shell, LynxWindow } from 'lynxtron';
+import { createRequire } from 'node:module';
+import type { LynxWindow } from 'lynxtron';
+
+const lynxtron = createRequire(import.meta.url)(
+  'lynxtron'
+) as typeof import('lynxtron');
 
 let mainWindow: LynxWindow | null = null;
 
@@ -17,8 +22,8 @@ const EXTERNAL_LINKS = new Set([
 ]);
 
 async function createWindow() {
-  await app.whenReady();
-  const mainWindow = new LynxWindow({
+  await lynxtron.app.whenReady();
+  const mainWindow = new lynxtron.LynxWindow({
     width: 1200,
     height: 800,
   });
@@ -32,7 +37,7 @@ export const loadFile = async (appPath: string) => {
     if (methodName === 'open-external') {
       const url = typeof params?.url === 'string' ? params.url : '';
       if (EXTERNAL_LINKS.has(url)) {
-        shell.openExternal(url);
+        lynxtron.shell.openExternal(url);
       }
       event.sendReply({});
     }

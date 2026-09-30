@@ -2,13 +2,15 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import * as lynxtron from 'lynxtron';
-
 import * as fs from 'node:fs';
-import { Module } from 'node:module';
+import { Module, createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as url from 'node:url';
 
+// Use the CommonJS API object so unrelated API getters remain lazy.
+const lynxtron = createRequire(import.meta.url)(
+  'lynxtron'
+) as typeof import('lynxtron');
 const { app } = lynxtron;
 
 type DefaultAppOptions = {

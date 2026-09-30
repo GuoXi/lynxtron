@@ -4,15 +4,12 @@
 
 import type { Event, LynxWindow as LWT } from 'lynxtron';
 import type { LynxFetchEvent } from './lynx-resource-fetcher';
-import { onResourceFetcher } from './lynx-resource-fetcher';
 
 const { LynxWindow } = process._linkedBinding('lynxtron_lynx_window') as {
   LynxWindow: typeof LWT;
 };
 
 const BaseWindow = require('./base-window');
-const lynxBridgeModule = require('./lynx-bridge');
-const lynxBridge = lynxBridgeModule.default ?? lynxBridgeModule;
 
 Object.setPrototypeOf(LynxWindow.prototype, BaseWindow.prototype);
 
@@ -115,10 +112,12 @@ LynxWindow.prototype._init = function (this: LWT) {
 
   // Dispatch messages from lynx window to the LynxBridge module.
   this.on('-lynx-message', function (this: LWT, channel, args) {
+    const { lynxBridge } = require('lynxtron') as typeof import('lynxtron');
     lynxBridge.emit(channel, args);
   });
 
   this.on('-lynx-invoke', function (this: LWT, event, channel, args) {
+    const { lynxBridge } = require('lynxtron') as typeof import('lynxtron');
     lynxBridge.emit('-internal-lynx-invoke', event, channel, args);
   });
 
@@ -151,6 +150,8 @@ LynxWindow.prototype._init = function (this: LWT) {
   this.on(
     '-on-fetch-resource',
     (event: LynxFetchEvent, resourceType: string, url: string) => {
+      const { onResourceFetcher } =
+        require('./lynx-resource-fetcher') as typeof import('./lynx-resource-fetcher');
       onResourceFetcher(event, resourceType, url);
     }
   );
@@ -170,11 +171,11 @@ const isLynxWindow = (win: any) => {
 
 LynxWindow.fromId = (id: number) => {
   const win = BaseWindow.fromId(id);
-  return isLynxWindow(win) ? ((win as any) as LWT) : null;
+  return isLynxWindow(win) ? (win as any as LWT) : null;
 };
 
 LynxWindow.getAllWindows = () => {
-  return (BaseWindow.getAllWindows().filter(isLynxWindow) as any[]) as LWT[];
+  return BaseWindow.getAllWindows().filter(isLynxWindow) as any[] as LWT[];
 };
 
 LynxWindow.getFocusedWindow = () => {

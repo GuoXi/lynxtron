@@ -2,7 +2,6 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { app } from 'lynxtron';
 import type { MenuItemConstructorOptions } from 'lynxtron';
 
 const isMac = process.platform === 'darwin';
@@ -67,9 +66,16 @@ interface Role {
 export const roleList: Record<RoleId, Role> = {
   about: {
     get label() {
-      return isLinux ? 'About' : `About ${app.name}`;
+      if (isLinux) return 'About';
+      const { app } = require('lynxtron') as typeof import('lynxtron');
+      return `About ${app.name}`;
     },
-    ...((isWindows || isLinux) && { appMethod: () => app.showAboutPanel() }),
+    ...((isWindows || isLinux) && {
+      appMethod: () => {
+        const { app } = require('lynxtron') as typeof import('lynxtron');
+        app.showAboutPanel();
+      },
+    }),
   },
   close: {
     label: isMac ? 'Close Window' : 'Close',
@@ -101,6 +107,7 @@ export const roleList: Record<RoleId, Role> = {
   },
   hide: {
     get label() {
+      const { app } = require('lynxtron') as typeof import('lynxtron');
       return `Hide ${app.name}`;
     },
     accelerator: 'Command+H',
@@ -127,8 +134,10 @@ export const roleList: Record<RoleId, Role> = {
   quit: {
     get label() {
       switch (process.platform) {
-        case 'darwin':
+        case 'darwin': {
+          const { app } = require('lynxtron') as typeof import('lynxtron');
           return `Quit ${app.name}`;
+        }
         case 'win32':
           return 'Exit';
         default:
@@ -136,7 +145,10 @@ export const roleList: Record<RoleId, Role> = {
       }
     },
     accelerator: isWindows ? undefined : 'CommandOrControl+Q',
-    appMethod: () => app.quit(),
+    appMethod: () => {
+      const { app } = require('lynxtron') as typeof import('lynxtron');
+      app.quit();
+    },
   },
   redo: {
     label: 'Redo',
@@ -225,6 +237,7 @@ export const roleList: Record<RoleId, Role> = {
   },
   appmenu: {
     get label() {
+      const { app } = require('lynxtron') as typeof import('lynxtron');
       return app.name;
     },
     submenu: [

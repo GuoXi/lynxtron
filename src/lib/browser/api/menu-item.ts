@@ -2,10 +2,6 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import * as roles from '@lynxtron/internal/browser/api/menu-item-roles';
-
-import { Menu } from 'lynxtron';
-
 let nextCommandId = 0;
 
 // Function to reset commandId counter (for testing or menu rebuild)
@@ -44,18 +40,23 @@ const MenuItem = function (this: any, options: any) {
   if (typeof this.role === 'string' && this.role) {
     this.role = this.role.toLowerCase();
   }
+  const roles =
+    require('./menu-item-roles') as typeof import('./menu-item-roles');
   this.submenu = this.submenu || roles.getDefaultSubmenu(this.role);
-  if (this.submenu != null && this.submenu.constructor !== Menu) {
-    this.submenu = Menu.buildFromTemplate(this.submenu);
+  if (this.submenu != null) {
+    const { Menu } = require('lynxtron') as typeof import('lynxtron');
+    if (this.submenu.constructor !== Menu) {
+      this.submenu = Menu.buildFromTemplate(this.submenu);
+    }
   }
   if (this.type == null && this.submenu != null) {
     this.type = 'submenu';
   }
-  if (
-    this.type === 'submenu' &&
-    (this.submenu == null || this.submenu.constructor !== Menu)
-  ) {
-    throw new Error('Invalid submenu');
+  if (this.type === 'submenu') {
+    const { Menu } = require('lynxtron') as typeof import('lynxtron');
+    if (this.submenu == null || this.submenu.constructor !== Menu) {
+      throw new Error('Invalid submenu');
+    }
   }
 
   overrideReadOnlyProperty('type', roles.getDefaultType(this.role));
@@ -110,6 +111,7 @@ const MenuItem = function (this: any, options: any) {
         typeof this.selector === 'string' &&
         process.platform === 'darwin'
       ) {
+        const { Menu } = require('lynxtron') as typeof import('lynxtron');
         Menu.sendActionToFirstResponder(this.selector);
       }
     }
@@ -127,10 +129,14 @@ MenuItem.types = [
 ];
 
 MenuItem.prototype.getDefaultRoleAccelerator = function () {
+  const roles =
+    require('./menu-item-roles') as typeof import('./menu-item-roles');
   return roles.getDefaultAccelerator(this.role);
 };
 
 MenuItem.prototype.getCheckStatus = function () {
+  const roles =
+    require('./menu-item-roles') as typeof import('./menu-item-roles');
   if (!roles.shouldOverrideCheckStatus(this.role)) return this.checked;
   return roles.getCheckStatus(this.role);
 };
